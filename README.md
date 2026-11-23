@@ -53,6 +53,7 @@ A profile stores selections, not a complete system image. Package names, service
 - Snapshot tools are installed without automatically changing disk/subvolume layouts.
 - Debian 13 also has an optional **Gaming tweaks** task. It installs GameMode, MangoHud and vkBasalt, creates a conservative per-user MangoHud configuration without overwriting an existing one, and records opt-in Steam launch options. It does not force CPU governors, overclock hardware, or apply global kernel/security changes.
 - Debian 13 also offers an optional **lydhelp** command reference. It installs a local terminal help command with beginner-friendly topics for files, folders, searching, permissions, storage, processes, networking, APT and archives.
+- Debian 13 also offers an optional **Btrfs mount tweaks** task. It detects whether `/` is Btrfs, backs up `/etc/fstab`, adds `noatime` and `compress=zstd:3` to the Btrfs root entry, remounts and verifies the options, and restores the backup if verification fails. It does not partition disks or create subvolumes.
 
 
 ## NVIDIA driver notes
