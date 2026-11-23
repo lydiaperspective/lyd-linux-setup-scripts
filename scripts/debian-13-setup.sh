@@ -71,6 +71,87 @@ enable_nonfree() {
   confirm "Have you enabled contrib, non-free and non-free-firmware in your Debian sources?" || return 1
   sudo apt-get update
 }
+
+configure_btrfs_mount_options() {
+  local fstype tmp backup
+  fstype="$(findmnt -n -o FSTYPE / 2>/dev/null || true)"
+  if [[ "$fstype" != btrfs ]]; then
+    msg "The currently mounted root filesystem is '$fstype', not Btrfs. No changes were made. This option only adjusts an existing Btrfs root filesystem."
+    log "Skipped Btrfs mount tweaks: root filesystem is $fstype."
+    return 0
+  fi
+
+  msg "This adds noatime and compress=zstd:3 to the Btrfs root entry in /etc/fstab. It preserves your UUID, subvolume settings and other mount options, and creates a timestamped backup first."
+  confirm "Apply the Btrfs mount options to /?" || return 0
+
+  tmp="$(mktemp)"
+  backup="/etc/fstab.lyd-backup-$(date +%Y%m%d-%H%M%S)"
+  if ! sudo cp -a /etc/fstab "$backup"; then
+    rm -f "$tmp"
+    die "Could not back up /etc/fstab. No changes were made."
+  fi
+
+  if ! awk '
+    BEGIN { found=0 }
+    /^[[:space:]]*#/ || NF < 4 { print; next }
+    $2 == "/" && $3 == "btrfs" {
+      found=1
+      n=split($4, opts, ",")
+      noatime=0
+      compress=0
+      rebuilt=""
+      for (i=1; i<=n; i++) {
+        if (opts[i] == "noatime") noatime=1
+        if (opts[i] ~ /^compress=/) {
+          if (!compress) {
+            rebuilt = rebuilt (rebuilt == "" ? "" : ",") "compress=zstd:3"
+            compress=1
+          }
+        } else {
+          rebuilt = rebuilt (rebuilt == "" ? "" : ",") opts[i]
+        }
+      }
+      if (!noatime) rebuilt = rebuilt (rebuilt == "" ? "" : ",") "noatime"
+      if (!compress) rebuilt = rebuilt (rebuilt == "" ? "" : ",") "compress=zstd:3"
+      $4=rebuilt
+    }
+    { print }
+    END { if (!found) exit 3 }
+  ' /etc/fstab > "$tmp"; then
+    rm -f "$tmp"
+    sudo rm -f "$backup"
+    msg "No Btrfs root entry was found in /etc/fstab. No changes were made."
+    log "Skipped Btrfs mount tweaks: no Btrfs root entry in /etc/fstab."
+    return 0
+  fi
+
+  if ! sudo install -o root -g root -m 644 "$tmp" /etc/fstab; then
+    rm -f "$tmp"
+    msg "Could not update /etc/fstab. The backup is at $backup."
+    return 1
+  fi
+  rm -f "$tmp"
+
+  if ! sudo mount -o remount /; then
+    sudo cp -a "$backup" /etc/fstab
+    sudo mount -o remount / || true
+    msg "The remount failed. The original /etc/fstab was restored from $backup."
+    log "Btrfs mount tweak failed; restored original fstab."
+    return 1
+  fi
+
+  if ! findmnt -n -o OPTIONS / | grep -q 'noatime' || ! findmnt -n -o OPTIONS / | grep -q 'compress=zstd:3'; then
+    sudo cp -a "$backup" /etc/fstab
+    sudo mount -o remount / || true
+    msg "The requested options could not be verified as active. The original /etc/fstab was restored from $backup."
+    log "Btrfs mount tweak verification failed; restored original fstab."
+    return 1
+  fi
+
+  log "Enabled noatime and compress=zstd:3 for the Btrfs root mount. Backup: $backup"
+  msg "Btrfs mount options configured successfully.\n\nActive options: noatime, compress=zstd:3\nBackup: $backup"
+}
+
 install_nvidia_proprietary() {
   msg "Debian 13's official Trixie archive currently packages the proprietary NVIDIA 550 branch, not 580. This option installs Debian's packaged proprietary driver. It does not add a mismatched Debian 12 repository or use NVIDIA's standalone .run installer."
   confirm "Install the Debian-packaged proprietary NVIDIA driver (550 branch)?" || return 0
@@ -125,7 +206,7 @@ preflight
 log "===== $APP_NAME started ====="
 log "Detected: $(. /etc/os-release; printf '%s' "$PRETTY_NAME")"
 choose_profile
-tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" woman_alias "Add woman command as an alias for man" lydhelp "Install the lydhelp terminal command guide" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
+tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" btrfs_tweaks "Configure noatime and zstd compression on Btrfs root" woman_alias "Add woman command as an alias for man" lydhelp "Install the lydhelp terminal command guide" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
 opts=()
 for ((i=0; i<${#tasks[@]}; i+=2)); do id="${tasks[i]}"; opts+=("$id" "${tasks[i+1]}" "$(state_for "$id")"); done
 mapfile -t SELECTED < <(checklist "Select Debian setup tasks:" "Choose tasks to perform. All changes are reviewed before execution." "${opts[@]}") || true
