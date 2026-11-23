@@ -7,7 +7,7 @@
 set -Eeuo pipefail
 
 APP_NAME="Fedora KDE Setup Manager"
-CONFIG_ROOT="$HOME/.config/fedora-kde-setup"
+CONFIG_ROOT="$HOME/.config/lyd-linux-setup"
 PROFILE_DIR="$CONFIG_ROOT/profiles"
 mkdir -p "$PROFILE_DIR"
 LOG_FILE="$PROFILE_DIR/setup-$(date +%Y%m%d-%H%M%S).log"
