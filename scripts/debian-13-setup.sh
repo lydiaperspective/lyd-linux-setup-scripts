@@ -125,7 +125,7 @@ preflight
 log "===== $APP_NAME started ====="
 log "Detected: $(. /etc/os-release; printf '%s' "$PRETTY_NAME")"
 choose_profile
-tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
+tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
 opts=()
 for ((i=0; i<${#tasks[@]}; i+=2)); do id="${tasks[i]}"; opts+=("$id" "${tasks[i+1]}" "$(state_for "$id")"); done
 mapfile -t SELECTED < <(checklist "Select Debian setup tasks:" "Choose tasks to perform. All changes are reviewed before execution." "${opts[@]}") || true
@@ -136,6 +136,33 @@ for task in "${SELECTED[@]}"; do
   case "$task" in
     system_update) sudo apt-get update 2>&1 | tee -a "$LOG_FILE"; sudo apt-get full-upgrade -y 2>&1 | tee -a "$LOG_FILE";;
     desktop_tools) install_pkgs ark dolphin konsole kate kcalc ffmpeg;;
+    gaming_tweaks)
+      msg "Gaming tweaks installs GameMode, MangoHud and vkBasalt. GameMode applies temporary optimisations only when a game requests it; MangoHud is opt-in per game; vkBasalt is installed but its visual effects are not enabled globally. No CPU governor, overclock, kernel parameter or security setting is changed."
+      install_pkgs gamemode mangohud vkbasalt
+      mkdir -p "$HOME/.config/MangoHud"
+      if [[ ! -e "$HOME/.config/MangoHud/MangoHud.conf" ]]; then
+        cat > "$HOME/.config/MangoHud/MangoHud.conf" <<'MANGOHUD'
+### Lyd Linux Setup - conservative MangoHud defaults
+fps
+frametime
+cpu_stats
+gpu_stats
+ram
+vram
+gpu_temp
+cpu_temp
+position=top-left
+toggle_hud=Shift_R+F12
+MANGOHUD
+        log "Created user MangoHud configuration at $HOME/.config/MangoHud/MangoHud.conf"
+      else
+        log "Existing MangoHud configuration preserved."
+      fi
+      log "GameMode can be used with Steam launch option: gamemoderun %command%"
+      log "MangoHud can be used with Steam launch option: mangohud %command%"
+      log "Combined Steam launch option: gamemoderun mangohud %command%"
+      log "vkBasalt remains opt-in; enable per game with ENABLE_VKBASALT=1 in its launch options."
+      ;;
     flatpak) install_pkgs flatpak plasma-discover-backend-flatpak; sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo;;
     podman) install_pkgs podman podman-compose podman-docker; sudo systemctl enable --now podman.socket;;
     tuned) install_pkgs tuned; enable_service tuned.service;;
