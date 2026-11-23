@@ -125,7 +125,7 @@ preflight
 log "===== $APP_NAME started ====="
 log "Detected: $(. /etc/os-release; printf '%s' "$PRETTY_NAME")"
 choose_profile
-tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
+tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" woman_alias "Add woman command as an alias for man" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
 opts=()
 for ((i=0; i<${#tasks[@]}; i+=2)); do id="${tasks[i]}"; opts+=("$id" "${tasks[i+1]}" "$(state_for "$id")"); done
 mapfile -t SELECTED < <(checklist "Select Debian setup tasks:" "Choose tasks to perform. All changes are reviewed before execution." "${opts[@]}") || true
@@ -162,6 +162,21 @@ MANGOHUD
       log "MangoHud can be used with Steam launch option: mangohud %command%"
       log "Combined Steam launch option: gamemoderun mangohud %command%"
       log "vkBasalt remains opt-in; enable per game with ENABLE_VKBASALT=1 in its launch options."
+      ;;
+    woman_alias)
+      install_pkgs man-db
+      if command -v woman >/dev/null 2>&1; then
+        msg "A command named 'woman' already exists at $(command -v woman). To avoid replacing another program, no alias was installed."
+        log "Skipped woman wrapper: existing command found at $(command -v woman)"
+      else
+        sudo tee /usr/local/bin/woman >/dev/null <<'WOMAN'
+#!/bin/sh
+exec man "$@"
+WOMAN
+        sudo chmod 755 /usr/local/bin/woman
+        log "Installed /usr/local/bin/woman as a system-wide wrapper for man."
+        msg "Installed 'woman'. You can now run commands such as: woman ls"
+      fi
       ;;
     flatpak) install_pkgs flatpak plasma-discover-backend-flatpak; sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo;;
     podman) install_pkgs podman podman-compose podman-docker; sudo systemctl enable --now podman.socket;;
