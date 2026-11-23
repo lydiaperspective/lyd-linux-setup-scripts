@@ -49,6 +49,9 @@ load_profile() {
     while IFS='=' read -r key value; do
         case "$key" in selected) IFS=',' read -r -a PROFILE_SELECTED <<< "$value";; esac
     done < "$1"
+    # Translate portable task names from the other managers.
+    contains sshd "${PROFILE_SELECTED[@]}" && PROFILE_SELECTED+=(ssh)
+    { contains qemu "${PROFILE_SELECTED[@]}" || contains libvirt "${PROFILE_SELECTED[@]}" || contains virt_manager "${PROFILE_SELECTED[@]}"; } && PROFILE_SELECTED+=(virtualization)
     LOADED_PROFILE="$(basename "$1" .conf)"
     log "Loaded profile: $LOADED_PROFILE"
 }
