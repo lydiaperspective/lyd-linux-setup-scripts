@@ -4,7 +4,7 @@
 set -Eeuo pipefail
 
 APP_NAME="CentOS Stream 10 Setup Manager"
-CONFIG_ROOT="$HOME/.config/centos-stream-10-setup"
+CONFIG_ROOT="$HOME/.config/lyd-linux-setup"
 PROFILE_DIR="$CONFIG_ROOT/profiles"
 mkdir -p "$PROFILE_DIR"
 LOG_FILE="$PROFILE_DIR/setup-$(date +%Y%m%d-%H%M%S).log"
