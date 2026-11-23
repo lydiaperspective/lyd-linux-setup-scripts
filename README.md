@@ -1,6 +1,6 @@
 # Linux Setup Managers
 
-Interactive post-install setup managers for CachyOS, Fedora KDE, Debian 13, and CentOS Stream 10.
+Interactive post-install setup managers for CachyOS, Fedora KDE, Debian 13, and CentOS Stream 10. The unified launcher lives at the repository root; individual distribution managers are kept in `scripts/`.
 
 ## Unified launcher (recommended)
 
@@ -20,10 +20,10 @@ You can also run a manager directly:
 
 | Distribution | Script |
 |---|---|
-| CachyOS | [cachyos-setup.sh](./cachyos-setup.sh) |
-| Fedora KDE | [fedora-kde-setup.sh](./fedora-kde-setup.sh) |
-| Debian 13 (Trixie) | [debian-13-setup.sh](./debian-13-setup.sh) |
-| CentOS Stream 10 | [centos-stream-10-setup.sh](./centos-stream-10-setup.sh) |
+| CachyOS | [cachyos-setup.sh](./scripts/cachyos-setup.sh) |
+| Fedora KDE | [fedora-kde-setup.sh](./scripts/fedora-kde-setup.sh) |
+| Debian 13 (Trixie) | [debian-13-setup.sh](./scripts/debian-13-setup.sh) |
+| CentOS Stream 10 | [centos-stream-10-setup.sh](./scripts/centos-stream-10-setup.sh) |
 
 Run the matching script with Bash as your normal user, not with `sudo`. Each manager requests elevated privileges when needed.
 
