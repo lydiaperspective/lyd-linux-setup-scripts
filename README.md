@@ -39,7 +39,7 @@ All four managers now use the same profile directory:
 - Use **Import a profile** in the unified launcher to copy a `.conf` profile from another computer into the shared directory.
 - Use **Export a profile** to copy a saved profile to a USB drive, network share, or another location.
 - Profiles are plain data files; the scripts parse them and never execute or source them as shell code.
-- Options with matching task IDs carry across distributions. Distribution-specific options that have no equivalent are ignored by the other manager. CachyOS also stores additional nested component choices, which are only meaningful to its own manager.
+- Common task IDs carry across distributions, and the managers translate a few equivalent names (for example, CachyOS `sshd` to the other managers' `ssh`, and CachyOS QEMU/libvirt selections to the other managers' `virtualization` task). Options without a meaningful equivalent are ignored. CachyOS also stores additional nested component choices, which are only meaningful to its own manager.
 - Existing profiles in the older per-distro directories are not automatically moved. Copy any old `.conf` files you want to keep into the shared directory, or import them with the launcher.
 
 A profile stores selections, not a complete system image. Package names, services, drivers, desktop environments, and supported features differ by distribution; always review the target manager's selections before applying them.
