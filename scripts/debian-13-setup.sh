@@ -125,7 +125,7 @@ preflight
 log "===== $APP_NAME started ====="
 log "Detected: $(. /etc/os-release; printf '%s' "$PRETTY_NAME")"
 choose_profile
-tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" woman_alias "Add woman command as an alias for man" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
+tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" woman_alias "Add woman command as an alias for man" lydhelp "Install the lydhelp terminal command guide" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
 opts=()
 for ((i=0; i<${#tasks[@]}; i+=2)); do id="${tasks[i]}"; opts+=("$id" "${tasks[i+1]}" "$(state_for "$id")"); done
 mapfile -t SELECTED < <(checklist "Select Debian setup tasks:" "Choose tasks to perform. All changes are reviewed before execution." "${opts[@]}") || true
@@ -177,6 +177,329 @@ WOMAN
         log "Installed /usr/local/bin/woman as a system-wide wrapper for man."
         msg "Installed 'woman'. You can now run commands such as: woman ls"
       fi
+      ;;
+    lydhelp)
+      sudo tee /usr/local/bin/lydhelp >/dev/null <<'LYDHELP'
+#!/bin/sh
+# Beginner-friendly command reference installed by Lyd Linux Setup.
+topic="${1:-help}"
+case "$topic" in
+  help|-h|--help)
+    cat <<'HELP'
+lydhelp - a beginner-friendly Linux terminal reference
+
+Usage:
+  lydhelp                 Show available topics
+  lydhelp files           Work with files and learn common options
+  lydhelp folders         Navigate and manage directories
+  lydhelp search          Find files and search inside text
+  lydhelp permissions     Understand permissions and ownership
+  lydhelp storage         Check disks and available space
+  lydhelp processes       Inspect and manage running programs
+  lydhelp network         Check network connections
+  lydhelp packages        Install, update and inspect Debian packages
+  lydhelp archives        Create and extract common archives
+
+Each topic explains what commands do, what common options mean, and
+shows examples. These examples are references; read a command before
+running it, especially if it changes or deletes files.
+HELP
+    ;;
+  files)
+    cat <<'FILES'
+FILES: listing, inspecting, copying, moving and deleting files
+
+  ls -lah
+    List files in the current directory.
+    -l  long format (permissions, owner, size, date)
+    -a  include hidden names (those beginning with a dot)
+    -h  human-readable sizes such as KiB and MiB
+
+  file report.pdf
+    Identify a file by its contents, not just its filename extension.
+
+  stat report.pdf
+    Show detailed metadata: size, permissions, owner and timestamps.
+
+  cp source.txt backup.txt
+    Copy a file. The first path is the source; the second is the destination.
+  cp -av Documents/ backup/
+    Copy a directory and its contents.
+    -a  archive mode; preserve useful attributes and copy directories
+    -v  verbose; print each item being copied
+
+  mv old-name.txt new-name.txt
+    Move or rename a file.
+  mv -i file.txt Documents/
+    -i  ask before overwriting an existing destination
+
+  touch notes.txt
+    Create an empty file, or update its modification timestamp.
+
+  mkdir -p projects/demo
+    Create a directory, including missing parent directories.
+    -p  do not complain if the directory already exists
+
+  ln -s /path/to/original shortcut
+    Create a symbolic link (a pointer to another file or directory).
+    -s  make a symbolic link rather than a hard link
+
+  du -sh Documents/
+    Show the total space used by a directory.
+    -s  summary total rather than every item
+    -h  human-readable sizes
+
+  wc -l notes.txt
+    Count lines in a text file.
+    -l  count lines; -w counts words; -c counts bytes
+
+  head -n 20 notes.txt
+    Show the first 20 lines.
+    -n  choose the number of lines
+
+  tail -f application.log
+    Show the end of a file and keep following new lines.
+    -f  follow updates; Ctrl+C stops following
+
+  less notes.txt
+    Read a long text file one screen at a time. Press q to quit.
+
+  nano notes.txt
+    Open a simple terminal text editor.
+
+  rm file.txt
+    Delete a file. There is normally no recycle bin in the terminal.
+  rm -r old-folder/
+    Delete a directory and its contents. Be very careful.
+    -r  recursive; -f forces removal and suppresses prompts.
+    Avoid rm -rf unless you fully understand the exact path.
+
+TIP: Quote paths containing spaces, for example:
+  cp "my notes.txt" "my notes backup.txt"
+FILES
+    ;;
+  folders)
+    cat <<'FOLDERS'
+FOLDERS: moving around the filesystem
+
+  pwd
+    Print the current working directory (where you are).
+
+  ls
+    List names in the current directory. Try ls -lah for details.
+
+  cd Documents
+    Enter a directory.
+  cd ..
+    Go to the parent directory.
+  cd ~
+    Go to your home directory.
+  cd -
+    Return to the previous directory.
+
+  mkdir -p projects/demo
+    Create nested directories if needed.
+
+  tree -L 2
+    Display a directory tree up to two levels deep (install tree if needed).
+
+PATH NOTES:
+  /       filesystem root
+  ~       your home directory
+  .       current directory
+  ..      parent directory
+  ./file  a file in the current directory
+FOLDERS
+    ;;
+  search)
+    cat <<'SEARCH'
+SEARCH: find files and text
+
+  find . -name "*.pdf"
+    Find PDF-named files under the current directory.
+    .          start here; use /path/to/folder to search elsewhere
+    -name      match a filename (case-sensitive)
+    "*.pdf"    quotes stop the shell expanding the wildcard too early
+
+  find . -iname "*report*"
+    Find names containing report, ignoring uppercase/lowercase.
+    -iname     case-insensitive filename match
+
+  grep -n "error" application.log
+    Search text inside a file.
+    -n         show matching line numbers
+    -i         ignore letter case
+    -r         search directories recursively
+    -I         skip binary files
+
+  grep -rnI "TODO" ./src
+    Search recursively for TODO in text files under ./src.
+
+  command -v python
+    Show which executable would run for a command name.
+SEARCH
+    ;;
+  permissions)
+    cat <<'PERMISSIONS'
+PERMISSIONS: read, write, execute and ownership
+
+  ls -l file
+    The first field shows permissions, for example -rw-r--r--.
+    r = read, w = write, x = execute.
+    The three groups are owner, group and everyone else.
+
+  chmod u+x script.sh
+    Add execute permission for the file owner.
+    u  owner; g group; o others; a everyone
+    +  add a permission; - remove; = set exactly
+    r  read; w write; x execute
+
+  chmod 644 file.txt
+    Numeric permissions: 4=read, 2=write, 1=execute.
+    644 means owner read/write; group and others read-only.
+
+  chown user:group file
+    Change the owner and group (normally requires sudo).
+
+  umask
+    Show the default permission mask used when creating files.
+
+TIP: Avoid chmod 777 as a general fix. It grants everyone broad access.
+PERMISSIONS
+    ;;
+  storage)
+    cat <<'STORAGE'
+STORAGE: disks, mounts and space
+
+  df -h
+    Show free and used space on mounted filesystems.
+    -h  human-readable sizes
+
+  du -sh ~/Downloads
+    Show how much space a directory uses.
+    -s  summary; -h human-readable
+
+  lsblk -f
+    List block devices, partitions, filesystems and mount points.
+    -f  include filesystem details and labels
+
+  findmnt
+    Show mounted filesystems and where they are mounted.
+
+  free -h
+    Show memory and swap usage. This is RAM, not disk storage.
+
+  sudo smartctl -a /dev/sdX
+    Show drive health information (requires smartmontools).
+    Replace /dev/sdX with the correct device; do not guess the device.
+STORAGE
+    ;;
+  processes)
+    cat <<'PROCESSES'
+PROCESSES: running programs and system activity
+
+  ps aux
+    Show running processes.
+    a  processes from all users; u user-oriented columns; x include services
+      without a terminal
+
+  top
+    Interactive live view of CPU and memory use. Press q to quit.
+
+  pgrep -a firefox
+    Find processes by name and show their command lines.
+
+  kill PID
+    Ask a process to exit normally. Replace PID with its process ID.
+  kill -TERM PID
+    Send the normal termination signal explicitly.
+  kill -KILL PID
+    Force-stop a process; use only when normal termination fails.
+
+  systemctl status service-name
+    Inspect a system service.
+  journalctl -u service-name
+    Read logs for a system service.
+PROCESSES
+    ;;
+  network)
+    cat <<'NETWORK'
+NETWORK: basic connection checks
+
+  ip address
+    Show network interfaces and their IP addresses.
+  ip route
+    Show routing information and the default gateway.
+  ping -c 4 debian.org
+    Send four test packets to check basic connectivity.
+    -c 4  stop after four packets
+
+  getent hosts debian.org
+    Check whether a hostname resolves to an address.
+  ss -tulpn
+    Show listening TCP/UDP sockets and associated processes.
+    -t TCP; -u UDP; -l listening; -p process; -n numeric addresses/ports
+    sudo may be needed to see process details for all users.
+NETWORK
+    ;;
+  packages)
+    cat <<'PACKAGES'
+PACKAGES: Debian APT basics
+
+  apt search keyword
+    Search package names and descriptions.
+  apt show package-name
+    Show package information and dependencies.
+  sudo apt update
+    Refresh the local package lists; this does not install upgrades.
+  sudo apt upgrade
+    Upgrade installed packages where possible.
+  sudo apt install package-name
+    Install a package.
+  sudo apt remove package-name
+    Remove a package but usually keep its configuration files.
+  sudo apt purge package-name
+    Remove a package and its system configuration files.
+  sudo apt autoremove
+    Offer to remove dependencies that are no longer needed.
+
+TIP: Read APT's proposed changes before confirming, especially removals.
+PACKAGES
+    ;;
+  archives)
+    cat <<'ARCHIVES'
+ARCHIVES: compressed files
+
+  tar -tf archive.tar
+    List the contents of a tar archive without extracting it.
+    -t list; -f use the archive filename
+
+  tar -xf archive.tar
+    Extract a tar archive into the current directory.
+    -x extract; -f use the archive filename
+
+  tar -czf backup.tar.gz folder/
+    Create a gzip-compressed tar archive.
+    -c create; -z gzip compression; -f archive filename
+
+  unzip archive.zip
+    Extract a ZIP archive.
+  unzip -l archive.zip
+    List ZIP contents without extracting.
+
+TIP: Inspect archive contents before extracting files you do not trust.
+ARCHIVES
+    ;;
+  *)
+    printf "Unknown topic: %s\n\n" "$topic" >&2
+    printf "Run 'lydhelp' to see available topics.\n" >&2
+    exit 2
+    ;;
+esac
+LYDHELP
+      sudo chmod 755 /usr/local/bin/lydhelp
+      log "Installed /usr/local/bin/lydhelp."
+      msg "Installed lydhelp. Try 'lydhelp', 'lydhelp files' or 'lydhelp search' in a terminal."
       ;;
     flatpak) install_pkgs flatpak plasma-discover-backend-flatpak; sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo;;
     podman) install_pkgs podman podman-compose podman-docker; sudo systemctl enable --now podman.socket;;
