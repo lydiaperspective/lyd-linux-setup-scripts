@@ -149,5 +149,6 @@ for task in "${SELECTED[@]}"; do
     auto_updates) configure_auto_updates;;
   esac
 done
+save_profile
 log "Setup run completed."
 msg "CentOS Stream 10 setup completed. Log: $LOG_FILE"
