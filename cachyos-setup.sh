@@ -153,6 +153,9 @@ load_profile_file() {
             flatpak) IFS=',' read -r -a PROFILE_FLATPAK <<< "$value";;
         esac
     done < "$file"
+    # Translate portable task names from the other managers.
+    contains ssh "${PROFILE_SELECTED[@]}" && PROFILE_SELECTED+=(sshd)
+    contains virtualization "${PROFILE_SELECTED[@]}" && PROFILE_SELECTED+=(qemu libvirt virt_manager)
     LOADED_PROFILE="$(basename "$file" .conf)"
     log "Loaded selection profile: $LOADED_PROFILE"
 }
