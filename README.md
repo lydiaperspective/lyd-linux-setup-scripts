@@ -54,6 +54,9 @@ A profile stores selections, not a complete system image. Package names, service
 
 ## NVIDIA driver notes
 
+- Debian 13 also has an optional **Gaming tweaks** task. It installs GameMode, MangoHud and vkBasalt, creates a conservative per-user MangoHud configuration without overwriting an existing one, and records opt-in Steam launch options. It does not force CPU governors, overclock hardware, or apply global kernel/security changes.
+
+
 - Fedora KDE and CentOS Stream 10 offer the proprietary NVIDIA 580xx legacy branch through RPM Fusion. It is intended only for GPUs supported by that legacy branch. Secure Boot may require akmods signing-key enrollment; the scripts do not disable Secure Boot.
 - Debian 13's official Trixie repository provides the proprietary 550 branch, not 580. The Debian manager therefore offers Debian's packaged proprietary driver rather than adding a mismatched Debian 12 repository or using NVIDIA's standalone installer.
 
