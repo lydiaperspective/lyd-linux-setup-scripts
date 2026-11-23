@@ -33,6 +33,9 @@ load_profile() {
   local key value
   PROFILE_SELECTED=()
   while IFS='=' read -r key value; do [[ "$key" == selected ]] && IFS=',' read -r -a PROFILE_SELECTED <<< "$value"; done < "$1"
+  # Translate portable task names from the other managers.
+  contains sshd "${PROFILE_SELECTED[@]}" && PROFILE_SELECTED+=(ssh)
+  { contains qemu "${PROFILE_SELECTED[@]}" || contains libvirt "${PROFILE_SELECTED[@]}" || contains virt_manager "${PROFILE_SELECTED[@]}"; } && PROFILE_SELECTED+=(virtualization)
   LOADED_PROFILE="$(basename "$1" .conf)"
   log "Loaded profile $LOADED_PROFILE"
 }
