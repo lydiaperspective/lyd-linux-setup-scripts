@@ -52,6 +52,7 @@ import_profile() {
     local source name destination
     source="$(whiptail --title "Import setup profile" --inputbox "Enter the full path to a profile .conf file:" 10 82 "$HOME/" 3>&1 1>&2 2>&3)" || return 0
     [[ -n "$source" ]] || return 0
+    [[ "$source" == "~/"* ]] && source="$HOME/${source#~/}"
     if ! validate_profile "$source"; then
         ui_msg "That file is not a supported setup profile. Nothing was copied."
         return 1
@@ -78,6 +79,7 @@ export_profile() {
     choice="$(ui_menu "Choose a profile to copy out:" "${choices[@]}")" || return 0
     destination="$(whiptail --title "Export setup profile" --inputbox "Copy $choice to this path:" 10 82 "$HOME/$choice" 3>&1 1>&2 2>&3)" || return 0
     [[ -n "$destination" ]] || return 0
+    [[ "$destination" == "~/"* ]] && destination="$HOME/${destination#~/}"
     if [[ -e "$destination" ]] && ! ui_confirm "The destination already exists. Overwrite it?"; then return 0; fi
     mkdir -p -- "$(dirname -- "$destination")"
     install -m 600 -- "$PROFILE_DIR/$choice" "$destination"
