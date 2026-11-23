@@ -126,7 +126,7 @@ preflight
 log "===== $APP_NAME started ====="
 log "Detected: $(. /etc/os-release; printf '%s' "$PRETTY_NAME")"
 choose_profile
-tasks=(system_update ep "Update packages" epel "Enable EPEL and CRB" rpmfusion "Enable RPM Fusion" nvidia580 "Install proprietary NVIDIA 580xx driver" podman "Install Podman and Compose" tuned "Install TuneD" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" snapper "Install Snapper" auto_updates "Configure scheduled automatic updates")
+tasks=(system_update "Update packages" epel "Enable EPEL and CRB" rpmfusion "Enable RPM Fusion" nvidia580 "Install proprietary NVIDIA 580xx driver" podman "Install Podman and Compose" tuned "Install TuneD" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" snapper "Install Snapper" auto_updates "Configure scheduled automatic updates")
 opts=()
 for ((i=0; i<${#tasks[@]}; i+=2)); do id="${tasks[i]}"; opts+=("$id" "${tasks[i+1]}" "$(state_for "$id")"); done
 mapfile -t SELECTED < <(checklist "Select CentOS Stream 10 tasks:" "Choose tasks to perform. Review before applying." "${opts[@]}") || true
