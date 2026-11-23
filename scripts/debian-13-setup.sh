@@ -159,6 +159,92 @@ install_nvidia_proprietary() {
   install_pkgs linux-headers-amd64 dkms nvidia-driver nvidia-kernel-dkms nvidia-settings
   log "NVIDIA packages installed. Reboot before testing with nvidia-smi."
 }
+
+configure_snapper() {
+  local fstype root_source snapshots_path apt_choice
+  fstype="$(findmnt -n -o FSTYPE / 2>/dev/null || true)"
+  if [[ "$fstype" != btrfs ]]; then
+    msg "Snapper setup requires Btrfs for the root filesystem. Detected: ${fstype:-unknown}. Nothing was changed."
+    log "Skipped Snapper configuration: root filesystem is not Btrfs."
+    return 0
+  fi
+
+  if ! sudo btrfs subvolume show / >/dev/null 2>&1; then
+    msg "The root mount does not appear to be a Btrfs subvolume. Snapper setup has stopped without changing the filesystem."
+    log "Skipped Snapper configuration: / is not a detected Btrfs subvolume."
+    return 0
+  fi
+
+  install_pkgs snapper btrfs-progs
+  root_source="$(findmnt -n -o SOURCE /)"
+  snapshots_path="/.snapshots"
+
+  if [[ -f /etc/snapper/configs/root ]]; then
+    log "Existing Snapper root configuration detected; preserving it."
+  else
+    if mountpoint -q "$snapshots_path" || [[ -e "$snapshots_path" ]]; then
+      msg "The path /.snapshots already exists or is mounted, but no Snapper root configuration was found. To avoid overwriting an existing directory, mount or subvolume, automatic setup has stopped. Inspect the layout before configuring Snapper manually."
+      log "Snapper setup stopped: /.snapshots already exists without /etc/snapper/configs/root."
+      return 0
+    fi
+    msg "Snapper will create a root configuration for the existing Btrfs root subvolume. It will create the /.snapshots subvolume, but it will not repartition disks or rearrange your existing root/home subvolumes."
+    confirm "Create the Snapper configuration for / now?" || return 0
+    if ! sudo snapper -c root create-config / 2>&1 | tee -a "$LOG_FILE"; then
+      msg "Snapper could not create its root configuration. No further setup was attempted. Review the log and current Btrfs layout."
+      log "Snapper create-config failed for / (source: $root_source)."
+      return 1
+    fi
+  fi
+
+  if [[ ! -f /etc/snapper/configs/root ]]; then
+    msg "The Snapper root configuration file was not created. Automatic setup stopped."
+    return 1
+  fi
+
+  sudo systemctl enable --now snapper-timeline.timer snapper-cleanup.timer
+  log "Enabled Snapper timeline and cleanup timers."
+
+  apt_choice="no"
+  if confirm "Also create automatic Snapper pre/post snapshots around APT package transactions? This adds a small APT hook; snapshot creation failures will be logged but will not intentionally block package operations."; then
+    apt_choice="yes"
+  fi
+
+  if [[ "$apt_choice" == yes ]]; then
+    sudo tee /usr/local/sbin/lyd-snapper-apt-hook >/dev/null <<'HOOK'
+#!/bin/sh
+# Best-effort Snapper pre/post snapshots around APT dpkg transactions.
+set -u
+STATE=/run/lyd-snapper-apt-pre-number
+case "${1:-}" in
+  pre)
+    command -v snapper >/dev/null 2>&1 || exit 0
+    number="$(snapper -c root create --type pre --print-number --description "APT package transaction" 2>/dev/null)" || exit 0
+    printf '%s\n' "$number" > "$STATE"
+    ;;
+  post)
+    [ -s "$STATE" ] || exit 0
+    number="$(cat "$STATE" 2>/dev/null)" || exit 0
+    rm -f "$STATE"
+    case "$number" in *[!0-9]*|'') exit 0;; esac
+    snapper -c root create --type post --pre-number "$number" --description "APT package transaction completed" >/dev/null 2>&1 || true
+    ;;
+esac
+exit 0
+HOOK
+    sudo chmod 755 /usr/local/sbin/lyd-snapper-apt-hook
+    sudo tee /etc/apt/apt.conf.d/80lyd-snapper >/dev/null <<'APT'
+DPkg::Pre-Invoke { "/usr/local/sbin/lyd-snapper-apt-hook pre"; };
+DPkg::Post-Invoke { "/usr/local/sbin/lyd-snapper-apt-hook post"; };
+APT
+    log "Installed best-effort APT pre/post Snapper hooks."
+  else
+    log "APT pre/post Snapper hooks not enabled."
+  fi
+
+  msg "Snapper is configured for /. Timeline and cleanup timers are enabled. Review /etc/snapper/configs/root for retention settings. Snapshots are not backups and do not protect against drive failure."
+  log "Snapper root configuration complete."
+}
+
 configure_auto_updates() {
   local freq clock cal
   freq="$(menu "Automatic update frequency:" daily "Every day" weekly "Every week" monthly "Every month")" || return 0
@@ -206,7 +292,7 @@ preflight
 log "===== $APP_NAME started ====="
 log "Detected: $(. /etc/os-release; printf '%s' "$PRETTY_NAME")"
 choose_profile
-tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" btrfs_tweaks "Configure noatime and zstd compression on Btrfs root" woman_alias "Add woman command as an alias for man" lydhelp "Install the lydhelp terminal command guide" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Install Snapper" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
+tasks=(system_update "Update all installed packages" desktop_tools "KDE/desktop utilities and media tools" gaming_tweaks "Install gaming performance tools and user MangoHud config" btrfs_tweaks "Configure noatime and zstd compression on Btrfs root" woman_alias "Add woman command as an alias for man" lydhelp "Install the lydhelp terminal command guide" flatpak "Install Flatpak and Flathub" podman "Install Podman and Compose" tuned "Install TuneD" snapper "Configure Snapper snapshots for Btrfs root" cockpit "Install Cockpit" ssh "Install OpenSSH server" tailscale "Install Tailscale" virtualization "Install QEMU/KVM and virt-manager" nvidia "Install Debian proprietary NVIDIA driver (550)" auto_updates "Configure scheduled automatic updates" headless "Convert KDE installation to headless")
 opts=()
 for ((i=0; i<${#tasks[@]}; i+=2)); do id="${tasks[i]}"; opts+=("$id" "${tasks[i+1]}" "$(state_for "$id")"); done
 mapfile -t SELECTED < <(checklist "Select Debian setup tasks:" "Choose tasks to perform. All changes are reviewed before execution." "${opts[@]}") || true
@@ -585,7 +671,7 @@ LYDHELP
     flatpak) install_pkgs flatpak plasma-discover-backend-flatpak; sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo;;
     podman) install_pkgs podman podman-compose podman-docker; sudo systemctl enable --now podman.socket;;
     tuned) install_pkgs tuned; enable_service tuned.service;;
-    snapper) install_pkgs snapper; log "Snapper installed only. Configure Btrfs subvolumes and snapshots manually; no filesystem layout is changed.";;
+    snapper) configure_snapper;;
     cockpit) install_pkgs cockpit; enable_service cockpit.socket;;
     ssh) install_pkgs openssh-server; enable_service ssh.service;;
     tailscale) log "Installing Tailscale using its official installer"; curl -fsSL https://tailscale.com/install.sh | sh 2>&1 | tee -a "$LOG_FILE"; enable_service tailscaled.service;;
