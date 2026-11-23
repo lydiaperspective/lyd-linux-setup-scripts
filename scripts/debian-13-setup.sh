@@ -201,8 +201,19 @@ configure_snapper() {
     return 1
   fi
 
+  sudo snapper -c root set-config \
+    TIMELINE_CREATE="yes" \
+    TIMELINE_CLEANUP="yes" \
+    NUMBER_CLEANUP="yes" \
+    NUMBER_LIMIT="10" \
+    NUMBER_LIMIT_IMPORTANT="5" \
+    TIMELINE_LIMIT_HOURLY="10" \
+    TIMELINE_LIMIT_DAILY="7" \
+    TIMELINE_LIMIT_WEEKLY="4" \
+    TIMELINE_LIMIT_MONTHLY="6" \
+    TIMELINE_LIMIT_YEARLY="2"
   sudo systemctl enable --now snapper-timeline.timer snapper-cleanup.timer
-  log "Enabled Snapper timeline and cleanup timers."
+  log "Enabled Snapper timeline/number cleanup and retention limits; started timeline and cleanup timers."
 
   apt_choice="no"
   if confirm "Also create automatic Snapper pre/post snapshots around APT package transactions? This adds a small APT hook; snapshot creation failures will be logged but will not intentionally block package operations."; then
