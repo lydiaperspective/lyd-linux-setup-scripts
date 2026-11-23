@@ -50,7 +50,7 @@ A profile stores selections, not a complete system image. Package names, service
 - Timestamped logs stored alongside each manager's profile directory.
 - Scripts are intended to be rerun; selected tasks are applied only when chosen.
 - No manager automatically reboots the machine.
-- Snapshot tools are installed without automatically changing disk/subvolume layouts.
+- Snapshot tools do not repartition disks or rearrange existing Btrfs subvolumes. The Debian 13 **Snapper** task now detects Btrfs root support, creates a Snapper root configuration and `/.snapshots` subvolume only when that path is absent, enables timeline/cleanup timers, and optionally installs best-effort APT pre/post snapshot hooks. It stops rather than overwriting an existing `/.snapshots` path when no root Snapper configuration exists.
 - Debian 13 also has an optional **Gaming tweaks** task. It installs GameMode, MangoHud and vkBasalt, creates a conservative per-user MangoHud configuration without overwriting an existing one, and records opt-in Steam launch options. It does not force CPU governors, overclock hardware, or apply global kernel/security changes.
 - Debian 13 also offers an optional **lydhelp** command reference. It installs a local terminal help command with beginner-friendly topics for files, folders, searching, permissions, storage, processes, networking, APT and archives.
 - Debian 13 also offers an optional **Btrfs mount tweaks** task. It detects whether `/` is Btrfs, backs up `/etc/fstab`, adds `noatime` and `compress=zstd:3` to the Btrfs root entry, remounts and verifies the options, and restores the backup if verification fails. It does not partition disks or create subvolumes.
