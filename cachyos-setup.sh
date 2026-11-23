@@ -8,7 +8,7 @@
 set -Eeuo pipefail
 
 APP_NAME="CachyOS Setup Manager"
-PROFILE_DIR="$HOME/.config/cachyos-setup/profiles"
+PROFILE_DIR="$HOME/.config/lyd-linux-setup/profiles"
 mkdir -p "$PROFILE_DIR"
 LOG_DIR="$PROFILE_DIR"
 LOG_FILE="$LOG_DIR/setup-$(date +%Y%m%d-%H%M%S).log"
