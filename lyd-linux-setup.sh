@@ -111,8 +111,8 @@ while true; do
             quit "Exit")" || break
         case "$action" in
             run)
-                [[ -f "$REPO_DIR/$script" ]] || { ui_msg "Could not find $REPO_DIR/$script"; continue; }
-                exec bash "$REPO_DIR/$script"
+                [[ -f "$REPO_DIR/scripts/$script" ]] || { ui_msg "Could not find $REPO_DIR/scripts/$script"; continue; }
+                exec bash "$REPO_DIR/scripts/$script"
                 ;;
             import) import_profile ;;
             export) export_profile ;;
