@@ -52,6 +52,7 @@ A profile stores selections, not a complete system image. Package names, service
 - No manager automatically reboots the machine.
 - Snapshot tools are installed without automatically changing disk/subvolume layouts.
 - Debian 13 also has an optional **Gaming tweaks** task. It installs GameMode, MangoHud and vkBasalt, creates a conservative per-user MangoHud configuration without overwriting an existing one, and records opt-in Steam launch options. It does not force CPU governors, overclock hardware, or apply global kernel/security changes.
+- Debian 13 also offers an optional **lydhelp** command reference. It installs a local terminal help command with beginner-friendly topics for files, folders, searching, permissions, storage, processes, networking, APT and archives.
 
 
 ## NVIDIA driver notes
