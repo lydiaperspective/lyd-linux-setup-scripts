@@ -112,7 +112,7 @@ while true; do
         case "$action" in
             run)
                 [[ -f "$REPO_DIR/scripts/$script" ]] || { ui_msg "Could not find $REPO_DIR/scripts/$script"; continue; }
-                exec bash "$REPO_DIR/scripts/$script"
+                bash "$REPO_DIR/scripts/$script"
                 ;;
             import) import_profile ;;
             export) export_profile ;;
